@@ -8,7 +8,7 @@ import (
 	"test/queue"
 )
 
-var goRoutineCnt = 4
+var goRoutineCnt = 1000
 
 func checkPutAndGet(checkData []int) {
 	l := len(checkData)
@@ -51,7 +51,7 @@ func BenchmarkEsQueueReadContention(b *testing.B) {
 				v := val.(int)
 				checkData[v] = v
 			}
-			fmt.Printf("[%d]  xxxxxxx\n", i)
+			// fmt.Printf("[%d]  xxxxxxx\n", i)
 			wgGet.Done()
 		}(i)
 	}

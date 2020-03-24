@@ -81,10 +81,6 @@ func (q *EsQueue) Put(val interface{}) (ok bool, quantity uint32, p uint32, g ui
 		posCnt = capMod + (putPos - getPos)
 	}
 
-	if putPos <= getPos {
-		fmt.Printf("----- >> p: %d, g: %d\n", putPos, getPos)
-	}
-
 	if posCnt >= capMod-1 {
 		runtime.Gosched()
 		return false, posCnt, putPos, getPos
@@ -117,12 +113,9 @@ func (q *EsQueue) Get() (val interface{}, ok bool, quantity uint32, p uint32, g 
 	var cache *esCache
 	capMod := q.capMod
 
-	putPos = atomic.LoadUint32(&q.putPos)
-	// 当上一行执行以后, 线程环境被切换去执行了 很多次 put 和其他的 get,
-	// 然后又切换回来, 这个时候 putPos 明显小于即将在下面拿到的 getPos
-	// 若这个时候 getPos 刚好等于真实的 putPos, 那么 这个函数就会去成功执行 CompareAndSwapUint32 getPos + 1
-	// 真实的 getPos 就一跃超过了 putPos
 	getPos = atomic.LoadUint32(&q.getPos)
+	putPos = atomic.LoadUint32(&q.putPos)
+	// 解决办法就是把 getPos 移动到 putPos 之前, 这样 无论如何拿到的 getPos 一定是在真实的 putPos "后面的"
 
 	if putPos >= getPos {
 		posCnt = putPos - getPos
@@ -133,10 +126,6 @@ func (q *EsQueue) Get() (val interface{}, ok bool, quantity uint32, p uint32, g 
 	if posCnt < 1 {
 		runtime.Gosched()
 		return nil, false, posCnt, putPos, getPos
-	}
-
-	if putPos <= getPos {
-		fmt.Printf("+++++ >> p: %d, g: %d\n", putPos, getPos)
 	}
 
 	getPosNew = getPos + 1
