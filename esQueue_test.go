@@ -8,7 +8,7 @@ import (
 	"test/queue"
 )
 
-var goRoutineCnt = 1000
+var goRoutineCnt = 4
 
 func checkPutAndGet(checkData []int) {
 	l := len(checkData)
