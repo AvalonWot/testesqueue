@@ -25,20 +25,24 @@ func BenchmarkEsQueueReadContention(b *testing.B) {
 	var wgGet sync.WaitGroup
 	wgGet.Add(goRoutineCnt)
 	var wgPut sync.WaitGroup
-	wgPut.Add(1)
+	wgPut.Add(goRoutineCnt)
 	b.ResetTimer()
 
-	go func() {
-		for i := 0; i < b.N; i++ {
-			ok, n, p, g := q.Put(i)
+	put := func(start, end int) {
+		for j := start; j < end; j++ {
+			ok, _, _, _ := q.Put(j)
 			for !ok {
-				fmt.Printf("---- %d  max: %d, i:%d, pusPos: %d, getPos: %d\n", n, b.N, i, p, g)
-				ok, n, p, g = q.Put(i)
-				fmt.Printf("---- %d  max: %d, i:%d, pusPos: %d, getPos: %d\n", n, b.N, i, p, g)
+				ok, _, _, _ = q.Put(j)
 			}
 		}
 		wgPut.Done()
-	}()
+	}
+
+	num := b.N / goRoutineCnt
+	for i := 0; i < goRoutineCnt-1; i++ {
+		go put(i*num, (i+1)*num)
+	}
+	go put((goRoutineCnt-1)*num, goRoutineCnt*num+(b.N%goRoutineCnt))
 
 	for i := 0; i < goRoutineCnt; i++ {
 		go func(i int) {

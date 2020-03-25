@@ -72,8 +72,9 @@ func (q *EsQueue) Put(val interface{}) (ok bool, quantity uint32, p uint32, g ui
 	var cache *esCache
 	capMod := q.capMod
 
-	getPos = atomic.LoadUint32(&q.getPos)
+	// 同样 这里也需要调整位置来避免写越过读(实际产生覆盖未读部分的内容的bug)
 	putPos = atomic.LoadUint32(&q.putPos)
+	getPos = atomic.LoadUint32(&q.getPos)
 
 	if putPos >= getPos {
 		posCnt = putPos - getPos
